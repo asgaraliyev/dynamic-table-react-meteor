@@ -1,22 +1,48 @@
 import React from "react";
 import { Hello } from "./Hello.jsx";
 import { Info } from "./Info.jsx";
-import Products, { ProductImages } from "../api/Products";
+import Products, { ProductImages } from "../api/Collections/Products";
 import DynamicTable from "./DynamicTable.jsx";
 import {
   BrowserRouter,
   Route,
   Switch,
 } from "react-router-dom/cjs/react-router-dom.min";
-import Tags, { TagsCounter } from "../api/Tags.js";
+import Tags, { TagsCounter } from "../api/Collections/Tags.js";
 export const App = () => (
   <div>
     <BrowserRouter>
       <Switch>
         <Route path="/tags" exact>
-          <DynamicTable Collection={Tags} CountCollection={TagsCounter} />
+          <DynamicTable Collection={"Tags"} subscription="tags" />
         </Route>
         <Route path="/products" exact>
+          <DynamicTable
+            collection={"Tags"}
+            rows={[
+              {
+                fieldName: "title",
+                title: "Title",
+                Component: ({ title }) => {
+                  return <td style={{ color: "green" }}>{title}</td>;
+                },
+              },
+            ]}
+            subscription="tags"
+          />
+          <DynamicTable
+            collection={"Categories"}
+            rows={[
+              {
+                fieldName: "i18n.az.title",
+                title: "Title",
+                Component: (props) => {
+                  return <td style={{ color: "green" }}>{props[ "i18n.az.title"]}</td>;
+                },
+              },
+            ]}
+            subscription="categories"
+          />
           <DynamicTable
             initialQuery={{}}
             initialPage={{
@@ -44,7 +70,8 @@ export const App = () => (
                 </div>
               );
             }}
-            collection={"products"}
+            collection={"Products"}
+            subscription="products"
             Footer={({ pagination }) => {
               return (
                 <tfoot>

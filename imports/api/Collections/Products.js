@@ -17,6 +17,3 @@ export const ProductImages = new FilesCollection({
         return 'Please upload image, with size equal or less than 10MB';
     }
 });
-
-const Counter= new Mongo.Collection("products_count")
-export {Counter}

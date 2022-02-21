@@ -1,13 +1,21 @@
 import { pageToQuery } from "../both/functions";
-import Products, { ProductImages } from "./Products";
+import { Products, Tags, ProductImages,Categories } from "./Collections/index";
+import Collections from "./Collections/index";
 import { publishComposite } from "meteor/reywood:publish-composite";
 import { Random } from "meteor/random";
-import Tags from "./Tags";
 
 publishComposite("tags", function (query, pageParam) {
   return {
     find() {
       return Tags.find(query, pageToQuery(pageParam));
+    },
+  };
+});
+publishComposite("categories", function (query, pageParam) {
+  console.log( Categories.find(query, pageToQuery(pageParam)).fetch())
+  return {
+    find() {
+      return Categories.find(query, pageToQuery(pageParam));
     },
   };
 });
@@ -39,46 +47,49 @@ publishComposite(
     };
   }
 );
-Meteor.publish("any.counter", function (colName, query = {}, queryChanged) {
-  const Collection = Mongo.Collection.get(colName);
-  const virtualColName = Collection._name + "_count";
-  let count = 0;
-  let initializing = true;
-  const docId = Random.id();
-  const handleCount = Collection.find(query, {
-    fields: { _id: 1 },
-  }).observeChanges({
-    added: () => {
-      count += 1;
-      if (!initializing) {
+Meteor.publish(
+  "any.counter",
+  function (colName, query = {}, docId = Random.id()) {
+    const virtualColName = "any_counter_collection";
+    console.log("colName",colName)
+    const Collection=Collections[colName]
+    let count = 0;
+    let initializing = true;
+    const handleCount = Collection.find(query, {
+      fields: { _id: 1 },
+    }).observeChanges({
+      added: () => {
+        count += 1;
+        if (!initializing) {
+          this.changed(virtualColName, docId, {
+            count,
+          });
+        }
+      },
+      removed: () => {
+        count -= 1;
+
         this.changed(virtualColName, docId, {
           count,
         });
-      }
-    },
-    removed: () => {
-      count -= 1;
-
-      this.changed(virtualColName, docId, {
+      },
+    });
+    initializing = false;
+    this.added(
+      virtualColName,
+      docId,
+      {
         count,
-      });
-    },
-  });
-  initializing = false;
-  this.added(
-    virtualColName,
-    docId,
-    {
-      count,
-    },
-    (err, res) => {
-      if (err) {
-        console.log("error" + err);
-      } else {
-        console.log("res=" + res);
+      },
+      (err, res) => {
+        if (err) {
+          console.log("error" + err);
+        } else {
+          console.log("res=" + res);
+        }
       }
-    }
-  );
-  this.ready();
-  this.onStop(() => handleCount.stop());
-});
+    );
+    this.ready();
+    this.onStop(() => handleCount.stop());
+  }
+);
