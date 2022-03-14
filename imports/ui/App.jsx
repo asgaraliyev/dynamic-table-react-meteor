@@ -17,33 +17,37 @@ export const App = () => (
           <DynamicTable Collection={"Tags"} subscription="tags" />
         </Route>
         <Route path="/products" exact>
-          <DynamicTable
+          {/* <DynamicTable
             collection={"Tags"}
             rows={[
               {
                 fieldName: "title",
                 title: "Title",
                 Component: ({ title }) => {
-                  return <td style={{ color: "green" }}>{title}</td>;
+                  return <td style={{ color: "yellow" }}>{title}</td>;
                 },
               },
             ]}
             subscription="tags"
-          />
-          <DynamicTable
+          /> */}
+          {/* <DynamicTable
             collection={"Categories"}
             rows={[
               {
                 fieldName: "i18n.az.title",
                 title: "Title",
                 Component: (props) => {
-                  return <td style={{ color: "green" }}>{props[ "i18n.az.title"]}</td>;
+                  return (
+                    <td style={{ color: "green" }}>{props["i18n.az.title"]}</td>
+                  );
                 },
               },
             ]}
             subscription="categories"
-          />
+          /> */}
           <DynamicTable
+            subscription="products"
+            Collection={Products}
             initialQuery={{}}
             initialPage={{
               perPage: 10,
@@ -89,7 +93,7 @@ export const App = () => (
                             parseInt(e.target.value)
                           );
                         }}
-                        defaultValue={pagination.pageNum}
+                        value={pagination.pageNum}
                       ></input>
                     </td>
                     <td>
@@ -157,7 +161,6 @@ export const App = () => (
                 Component: ({ _id, getSelectedItems }) => {
                   function onRemove() {
                     const selectedItems = getSelectedItems();
-                    console.log("selectedItems", selectedItems);
                   }
                   return (
                     <td>

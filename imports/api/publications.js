@@ -1,5 +1,5 @@
 import { pageToQuery } from "../both/functions";
-import { Products, Tags, ProductImages,Categories } from "./Collections/index";
+import { Products, Tags, ProductImages, Categories } from "./Collections/index";
 import Collections from "./Collections/index";
 import { publishComposite } from "meteor/reywood:publish-composite";
 import { Random } from "meteor/random";
@@ -12,7 +12,7 @@ publishComposite("tags", function (query, pageParam) {
   };
 });
 publishComposite("categories", function (query, pageParam) {
-  console.log( Categories.find(query, pageToQuery(pageParam)).fetch())
+  console.log(Categories.find(query, pageToQuery(pageParam)).fetch());
   return {
     find() {
       return Categories.find(query, pageToQuery(pageParam));
@@ -51,26 +51,29 @@ Meteor.publish(
   "any.counter",
   function (colName, query = {}, docId = Random.id()) {
     const virtualColName = "any_counter_collection";
-    console.log("colName",colName)
-    const Collection=Collections[colName]
+    const Collection = Collections[colName];
     let count = 0;
     let initializing = true;
+    let itemIds = [];
     const handleCount = Collection.find(query, {
       fields: { _id: 1 },
     }).observeChanges({
-      added: () => {
+      added: (id, doc) => {
         count += 1;
+        itemIds.push(id);
         if (!initializing) {
           this.changed(virtualColName, docId, {
             count,
+            itemIds,
           });
         }
       },
-      removed: () => {
+      removed: (id, doc) => {
+        itemIds.splice(itemIds.findIndex(id), 1);
         count -= 1;
-
         this.changed(virtualColName, docId, {
           count,
+          itemIds,
         });
       },
     });
@@ -80,6 +83,7 @@ Meteor.publish(
       docId,
       {
         count,
+        itemIds,
       },
       (err, res) => {
         if (err) {

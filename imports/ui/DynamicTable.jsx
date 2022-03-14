@@ -1,18 +1,20 @@
 import React from "react";
-import "./dynamic-table.css";
 import { Random } from "meteor/random";
 import { useTracker } from "meteor/react-meteor-data";
-import {
-  decryptObj,
-  encrypt,
-  encryptObj,
-  pageToQuery,
-  toDotize,
-} from "../both/functions";
+import { decryptObj, encryptObj, toDotize } from "../both/functions";
 import { useHistory, useLocation } from "react-router-dom";
-import { queryEncryptionSalt } from "../both/contstants";
 import AllCollections from "../api/Collections/index";
 let paginationChangeTyping;
+function getDynamicTableId(collection) {
+  let dynamicTableId = localStorage.getItem(`${collection}_dynamic_table_id`);
+  if (!dynamicTableId) {
+    dynamicTableId = Random.id();
+    localStorage.setItem(`${collection}_dynamic_table_id`, dynamicTableId);
+  }
+
+  return dynamicTableId;
+}
+const queryEncryptionSalt = " ";
 export default function DynamicTable({
   rows = [],
   collection,
@@ -37,21 +39,29 @@ export default function DynamicTable({
       parseInt(localStorage.getItem(`dynamic_table_${collection}_per_page`)) ||
       initialPage?.perPage,
   });
-  const [dynamicTableId, setdynamicTableId] = React.useState(Random.id());
+  const [dynamicTableId, setdynamicTableId] = React.useState(
+    getDynamicTableId(collection)
+  );
   const [selectedItems, setSelectedItems] = React.useState([]);
   const props = useTracker(() => {
     const result = {};
-    !Meteor.subscribe(collection.toLocaleLowerCase(), query, page).ready();
+    !Meteor.subscribe(subscription, query, page).ready();
     !Meteor.subscribe("any.counter", collection, query, dynamicTableId).ready();
     result.loading = false;
+    result.itemIds =
+      AllCollections["AnyCounterCollection"].findOne({
+        _id: dynamicTableId,
+      })?.itemIds || [];
     result.pagination = {
-      count: AllCollections[collection].findOne({ _id: dynamicTableId })?.count,
+      count: AllCollections["AnyCounterCollection"].findOne({
+        _id: dynamicTableId,
+      })?.count,
       ...page,
     };
+
     result.items = AllCollections[collection]
-      .find(query, pageToQuery(page))
+      .find(query, { sort: { createdAt: -1 } })
       .fetch();
-      console.log( result.items)
     for (let itemIndex = 0; itemIndex < result.items.length; itemIndex++) {
       result.items[itemIndex] = toDotize(result.items[itemIndex]);
       result.items[itemIndex]["COMPONENTS"] = [];
@@ -68,7 +78,6 @@ export default function DynamicTable({
     }
     return result;
   }, [query, page, selectedItems.length]);
-
   function selectableOnChange(e, item) {
     if (e.target.checked === true && item === "ALL") {
       setSelectedItems(props.items);
@@ -106,7 +115,6 @@ export default function DynamicTable({
     let encrypted = encryptObj(params, queryEncryptionSalt);
     history.push(`${history.location.pathname}?${dynamicTableId}=${encrypted}`);
   }, [query, page]);
-
   React.useEffect(() => {
     let params = new URLSearchParams(location.search);
     params = params.get(dynamicTableId);
@@ -131,10 +139,17 @@ export default function DynamicTable({
     },
     onNext() {
       const { pageNum } = page;
+      const newPageNum = pageNum + 1;
+
+      if (
+        props.pagination.pageNum * props.pagination.perPage >
+        props.pagination.count
+      )
+        return;
       if (pageNum)
         setPage({
           ...page,
-          pageNum: pageNum + 1,
+          pageNum: newPageNum,
         });
     },
     onPrev() {
@@ -213,6 +228,14 @@ export default function DynamicTable({
             }}
           />
         ) : null}
+        <style>{`
+        .super-dynamic-table{
+          width: 100%;
+          }
+          .super-dynamic-table td{
+              text-align: center;
+          }
+        `}</style>
       </table>
     </>
   );
